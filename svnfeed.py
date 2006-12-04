@@ -144,7 +144,7 @@ def generate_feed(title, repository, max_entries, uri) :
     
     # Updated
     updated = doc.createElement('updated')
-    updated.appendChild(doc.createTextNode(entries[len(entries)-1].date))
+    updated.appendChild(doc.createTextNode(entries[0].date))
     doc.documentElement.appendChild(updated)
     
     # Entries
