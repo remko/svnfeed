@@ -9,7 +9,7 @@ from xml.dom import minidom
 ################################################################################
 
 __author__ = 'Remko Troncon'
-__version__ = '0.1-dev'
+__version__ = '0.1'
 __copyright__ = """
     Copyright (C) 2006  Remko Troncon
 
