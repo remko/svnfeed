@@ -124,22 +124,29 @@ def generate_feed(title, repository, max_entries, uri) :
     doc = xml.dom.minidom.getDOMImplementation().createDocument(ATOM_NS, 'feed', None)
     doc.documentElement.setAttribute('xmlns',ATOM_NS)
 
-    # ID
-    id = doc.createElement('id')
-    id.appendChild(doc.createTextNode(repository))
-    doc.documentElement.appendChild(id)
-    
-    # Updated
-    updated = doc.createElement('updated')
-    updated.appendChild(doc.createTextNode(entries[len(entries)-1].date))
-    doc.documentElement.appendChild(updated)
-    
     # Title
     if title :
 	title_node = doc.createElement('title')
 	title_node.appendChild(doc.createTextNode(title))
 	doc.documentElement.appendChild(title_node)
 
+    # ID
+    id = doc.createElement('id')
+    id.appendChild(doc.createTextNode(repository))
+    doc.documentElement.appendChild(id)
+    
+    # Generator
+    generator = doc.createElement('generator')
+    generator.appendChild(doc.createTextNode(PROGRAM_NAME))
+    generator.setAttribute('version', __version__)
+    generator.setAttribute('uri', PROGRAM_URI)
+    doc.documentElement.appendChild(generator)
+    
+    # Updated
+    updated = doc.createElement('updated')
+    updated.appendChild(doc.createTextNode(entries[len(entries)-1].date))
+    doc.documentElement.appendChild(updated)
+    
     # Entries
     for entry in entries :
 	entry_node = doc.createElement('entry')
