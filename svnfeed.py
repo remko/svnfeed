@@ -149,6 +149,9 @@ def generate_feed(title, repository, max_entries, uri) :
     
     # Entries
     for entry in entries :
+    	if not entry.msg :
+		entry.msg = '(Empty commit message)'
+
 	entry_node = doc.createElement('entry')
 	
 	# ID
