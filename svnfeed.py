@@ -79,7 +79,7 @@ def svn_entries(repo, nb_entries) :
     svn_command = 'svn log --xml '
     if use_limit and nb_entries > 0 :
         svn_command += '--limit ' + str(nb_entries) + ' '
-    stream = os.popen('svn log --xml ' + repo)
+    stream = os.popen(svn_command + repo)
     if not stream :
         return None
 
