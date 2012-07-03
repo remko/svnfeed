@@ -60,9 +60,12 @@ class SVNLogEntry :
         self.date = ''
         self.msg = ''
         
-def svn_entries(repo, nb_entries) :
+def svn_entries(repo, nb_entries, user, passwd) :
     # Initialize SVN features
     use_limit = False
+
+    username = '--username ' + user
+    password = '--no-auth-cache --password ' + passwd
 
     # Determine the SVN version
     stream = os.popen('svn --version')
@@ -79,7 +82,7 @@ def svn_entries(repo, nb_entries) :
     svn_command = 'svn log --xml '
     if use_limit and nb_entries > 0 :
         svn_command += '--limit ' + str(nb_entries) + ' '
-    stream = os.popen(svn_command + repo)
+    stream = os.popen(svn_command + ' ' + username + ' ' + password + ' ' + repo)
     if not stream :
         return None
 
@@ -119,9 +122,9 @@ def svn_entries(repo, nb_entries) :
 # Feed generation
 ################################################################################
 
-def generate_feed(title, repository, max_entries, uri) :
+def generate_feed(title, repository, max_entries, uri, user, passwd) :
     # Retrieve the entries
-    entries = svn_entries(repository, max_entries)
+    entries = svn_entries(repository, max_entries, user, passwd)
     if entries == None :
         return None
 
@@ -207,6 +210,8 @@ def main() :
     parser.add_option('-f', '--file', metavar='FILE', help='File to output the feed to (stdout if omitted)')
     parser.add_option('', '--max-entries', metavar='ENTRIES', help='The maximum number of entries in the feed. Default: %default', type='int', default=10)
     parser.add_option('-u', '--uri', metavar='URI', help='Link to the web interface (e.g. \'http://example.com/%(revision)s\')')
+    parser.add_option('-U', '--username', metavar='USER', help='Username to access repository')
+    parser.add_option('-P', '--password', metavar='PASSWD', help='Password to access repository')
     (options, args) = parser.parse_args()
     
     # Get the repository URI
@@ -214,7 +219,7 @@ def main() :
         sys.exit('Repository URI missing')
     repository = args[0]
     
-    feed = generate_feed(title = options.title, repository = repository, max_entries = options.max_entries, uri = options.uri)
+    feed = generate_feed(title = options.title, repository = repository, max_entries = options.max_entries, uri = options.uri, user = options.username, passwd = options.password)
     if feed and options.file :
         out = open(options.file, 'w')
         out.write(feed)
