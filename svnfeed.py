@@ -64,8 +64,12 @@ def svn_entries(repo, nb_entries, user, passwd) :
     # Initialize SVN features
     use_limit = False
 
-    username = '--username ' + user
-    password = '--no-auth-cache --password ' + passwd
+    username = ''
+    if user :
+      username = '--username ' + user
+    password = ''
+    if passwd :
+      password = '--no-auth-cache --password ' + passwd
 
     # Determine the SVN version
     stream = os.popen('svn --version')
