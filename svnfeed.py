@@ -3,7 +3,6 @@
 import os, xml, cgi, sys, optparse, re
 from xml.dom import minidom
 
-
 ################################################################################
 # Module information
 ################################################################################
@@ -60,7 +59,7 @@ class SVNLogEntry :
         self.date = ''
         self.msg = ''
         
-def svn_entries(repo, nb_entries, user, passwd) :
+def svn_entries(repo, nb_entries, user, passwd, verbose) :
     # Initialize SVN features
     use_limit = False
 
@@ -86,6 +85,8 @@ def svn_entries(repo, nb_entries, user, passwd) :
     svn_command = 'svn log --xml '
     if use_limit and nb_entries > 0 :
         svn_command += '--limit ' + str(nb_entries) + ' '
+    if verbose :
+        svn_command += ' -v '
     stream = os.popen(svn_command + ' ' + username + ' ' + password + ' ' + repo)
     if not stream :
         return None
@@ -99,6 +100,7 @@ def svn_entries(repo, nb_entries, user, passwd) :
     doc.normalize()
     for log_entry in doc.getElementsByTagName('logentry') :
         entry = SVNLogEntry()
+        entry.paths = []
         entry.revision = int(log_entry.getAttribute('revision'))
         for property_node in log_entry.childNodes :
             if property_node.nodeType != xml.dom.Node.ELEMENT_NODE :
@@ -111,6 +113,15 @@ def svn_entries(repo, nb_entries, user, passwd) :
                 entry.date = value
             elif property_node.tagName == "msg" :
                 entry.msg = value
+            elif property_node.tagName == "paths" :
+                entry.paths = [
+                    (
+                        path_node.getAttribute("action"),
+                        node_text(path_node),
+                    )
+                    for path_node in property_node.childNodes if path_node.nodeType == xml.dom.Node.ELEMENT_NODE
+                ]
+                    
 
         entries.append(entry)
         
@@ -126,9 +137,10 @@ def svn_entries(repo, nb_entries, user, passwd) :
 # Feed generation
 ################################################################################
 
-def generate_feed(title, repository, max_entries, uri, user, passwd) :
+def generate_feed(title, repository, max_entries, uri, user, passwd, verbose) :
+
     # Retrieve the entries
-    entries = svn_entries(repository, max_entries, user, passwd)
+    entries = svn_entries(repository, max_entries, user, passwd, verbose)
     if entries == None :
         return None
 
@@ -206,6 +218,41 @@ def generate_feed(title, repository, max_entries, uri, user, passwd) :
     #return doc.toprettyxml()
     return doc.toxml('utf-8')
 
+## Simplified document writing.
+## Currently disabled because the lxml.builder dependency is not standard.
+#    from lxml.builder import ElementMaker
+#    import xml.etree.cElementTree as ET
+#    E = ElementMaker()
+#
+#    rss = E.feed(
+#        E.title( title ) if title else "",
+#        E.id( repository ),
+#        E.generator(
+#            PROGRAM_NAME,
+#            version = __version__,
+#            uri = PROGRAM_URI,
+#            ),
+#        E.updated(entries[0].date),
+#        *[
+#            E.entry(
+#                E.id( repository + '#' + str(entry.revision)),
+#                E.updated( entry.date),
+#                E.title(  "[%s] "%entry.revision +(entry.msg or '(Empty commit message)')),
+#                E.author(
+#                    E.name(entry.author)
+#                    ),
+#                E.link(rel='alternate', href=uri%dict(revision=entry.revision)) if uri else "",
+#                E.content(
+#                    entry.msg + "".join( ("\n%s %s"%(action, path) for action, path in entry.paths)),
+#                    type="text",
+#                    ),
+#                )
+#            for entry in entries
+#        ],
+#        xmlns=ATOM_NS
+#        )
+#    return '<?xml version="1.0" encoding="utf-8"?>'+ET.tostring(rss)
+
 
 def main() :
     # Parse the arguments
@@ -216,6 +263,7 @@ def main() :
     parser.add_option('-u', '--uri', metavar='URI', help='Link to the web interface (e.g. \'http://example.com/%(revision)s\')')
     parser.add_option('-U', '--username', metavar='USER', help='Username to access repository')
     parser.add_option('-P', '--password', metavar='PASSWD', help='Password to access repository')
+    parser.add_option('-v', '--verbose', action="store_true", default=False, help='Add to each entry the modified paths')
     (options, args) = parser.parse_args()
     
     # Get the repository URI
@@ -223,7 +271,7 @@ def main() :
         sys.exit('Repository URI missing')
     repository = args[0]
     
-    feed = generate_feed(title = options.title, repository = repository, max_entries = options.max_entries, uri = options.uri, user = options.username, passwd = options.password)
+    feed = generate_feed(title = options.title, repository = repository, max_entries = options.max_entries, uri = options.uri, user = options.username, passwd = options.password, verbose = options.verbose)
     if feed and options.file :
         out = open(options.file, 'w')
         out.write(feed)
